@@ -7,8 +7,10 @@
 import json
 from functools import cache
 from pathlib import Path
+from datetime import datetime
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+LOG_DIR = Path(__file__).resolve().parent.parent / "learning_log"
 MAX_RESULTS = 3
 
 
@@ -77,3 +79,22 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+def save_learning_log(topic: str, summary: str) -> str:
+    """学習の記録を learning_log/ フォルダにファイルとして保存する。
+
+    「今日の学習を記録して」「ログに残して」のように、利用者が学習内容の
+    保存を明示的に求めたときだけ使う。保存の前に利用者の承認が入る。
+    topic には学んだ用語やテーマ、summary には学んだ内容の要約を入れる。
+    """
+    if not topic.strip() or not summary.strip():
+        return "topic と summary は空にできません。保存しませんでした。"
+    LOG_DIR.mkdir(exist_ok=True)
+    now = datetime.now()
+    # ファイル名はモデルに決めさせず、日時から作る（任意のパスに書かせないため）
+    path = LOG_DIR / f"{now:%Y%m%d_%H%M%S}.md"
+    path.write_text(
+        f"# {topic}\n\n{now:%Y-%m-%d %H:%M}\n\n{summary}\n",
+        encoding="utf-8",
+    )
+    return f"{path.name} に保存しました。"
